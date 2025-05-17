@@ -1,0 +1,9 @@
+gymnasium
+
+torch
+torchvision
+
+tqdm
+
+wandb
+moviepy

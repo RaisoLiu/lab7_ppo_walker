@@ -1,1 +1,5 @@
 .venv
+result*
+test*
+__pycache__
+wandb

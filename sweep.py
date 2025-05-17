@@ -1,20 +1,81 @@
 import argparse
+import wandb
 
-config = argparse.Namespace(
-        actor_lr=3e-4,  # 較高的學習率
-        critic_lr=3e-3,  # 較高的學習率
-        gamma=0.95,      # 對Pendulum使用0.9的折扣因子
-        entropy_beta=2.5e-4,  # 減小熵權重，增加利用率
-        num_episodes=1000,
-        steps_on_memory=16,  # 合適的記憶步數
-        save_per_epoch=100,
-        seed=42,
-        max_grad_norm=10.0   # 較小的梯度裁剪閾值，增加穩定性
-    )
+# 超參數搜索空間定義
+sweep_config = {
+    'method': 'bayes',  # 使用貝葉斯優化方法
+    'metric': {
+        'name': 'avg_test_reward',  # 優化測試平均回報值
+        'goal': 'maximize'  # 目標是最大化回報
+    },
+    'parameters': {
+        'actor_lr': {
+            'values': [1e-4, 3e-4, 5e-4, 7e-4, 9e-4]
+        },
+        'critic_lr': {
+            'values': [1e-4, 3e-4, 5e-4, 7e-4, 9e-4]
+        },
+        'test_seed': {
+            'values': [42, 77, 123, 456, 789, 1000, 1234, 1456, 1789, 2000]
+        },
+        'discount_factor': {
+            'values': [0.9, 0.95, 0.99, 0.995]
+        },
+        'entropy_weight': {
+            'values': [0.01, 0.05, 0.1, 0.2]
+        },
+        'max_env_step': {
+            'values': [3e6] # fixed
+        },
+        'rollout_step': {
+            'values': [1024, 2048, 4096, 8192]
+        },
+        'tau': {
+            'values': [0.9, 0.95, 0.99, 0.995]
+        },
+        'update_epoch': {
+            'values': [5, 10, 20, 40]
+        },
+        'grad_clip': {
+            'values': [0.5, 1.0, 2.0, 5.0]
+        },
+        'batch_size': {
+            'values': [32, 64, 128, 256, 512]
+        },
+        'epsilon': {
+            'values': [0.1, 0.2, 0.3]
+        },
+        'num_test_episodes': {
+            'values': [5, 10, 20, 40]
+        },
+        'num_save_step': {
+            'values': [1e5] # fixed
+        }
+    }
+}
+
+def init_sweep():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--count", type=int, default=100, help="要執行的 sweep 運行次數")
+    parser.add_argument("--sweep-folder", type=str, default="sweep-PPO-Walker2d")
+    parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d-sweep")
+    parser.add_argument("--env-name", type=str, default="Walker2d-v4")
+    args = parser.parse_args()
+    
+    print("初始化 sweep: ")
+    print(args)
+    
+    sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
+    print(f"Sweep ID: {sweep_id}")
+    print(f"使用以下命令在 agent 機器上運行：")
+    print(f"wandb agent {args.wandb_project}/{sweep_id}")
+
+if __name__ == "__main__":
+    init_sweep()
 
 
 
-def train_agent_with_config(use_wandb: bool, test_mode: bool):
 
 
-    pass
+
+
