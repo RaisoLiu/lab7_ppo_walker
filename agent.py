@@ -50,11 +50,12 @@ if __name__ == "__main__":
     parser.add_argument("--wandb-entity", type=str, required=True, help="Weights & Biases 實體名稱（用戶名或團隊名）")
     parser.add_argument("--wandb-project", type=str, required=True, help="Weights & Biases 專案名稱")
     parser.add_argument("--sweep-id", type=str, required=True, help="Sweep ID")
+    parser.add_argument("--count", type=int, default=10, help="要執行的 sweep 運行次數")
     args = parser.parse_args()
     
     # 使用 wandb agent 運行訓練
     wandb.agent(
         f"{args.wandb_entity}/{args.wandb_project}/{args.sweep_id}",
         function=train,
-        count=1  # 每次運行一個實驗
+        count=args.count  # 每次運行一個實驗
     ) 
