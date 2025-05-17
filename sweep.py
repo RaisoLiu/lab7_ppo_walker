@@ -7,7 +7,7 @@ import os
 sweep_config = {
     'method': 'bayes',  # 使用貝葉斯優化方法
     'metric': {
-        'name': 'avg_test_reward',  # 優化測試平均回報值
+        'name': 'best_avg_episode_reward',  # 優化測試平均回報值
         'goal': 'maximize'  # 目標是最大化回報
     },
     'parameters': {
