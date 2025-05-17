@@ -1,6 +1,6 @@
 import gymnasium as gym
 import os
-os.environ["MUJOCO_GL"] = "egl"
+
 
 class Environment:
     def __init__(self, args, mode="train", seed=None, require_video=False):
@@ -11,6 +11,7 @@ class Environment:
         if self.mode == "train":
             self.env = gym.make(self.args.env_name)
         elif self.mode == "test" and require_video:
+            os.environ["MUJOCO_GL"] = "egl"
             def always_trigger_video(episode_id):
                 return True
             env = gym.make(self.args.env_name, render_mode="rgb_array")

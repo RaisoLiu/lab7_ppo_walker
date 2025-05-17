@@ -23,7 +23,10 @@ class Trainer:
         self.action_dim = self.env.get_action_dim()
         self.discount_factor = args.discount_factor
         print(f"state_dim: {self.state_dim}, action_dim: {self.action_dim}")
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not hasattr(args, "device") or args.device is None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = torch.device(args.device)
         print(f"Using device: {self.device}")
 
         self.actor = Actor(self.state_dim, self.action_dim).to(self.device)
@@ -266,6 +269,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d")
     parser.add_argument("--env-name", type=str, default="Walker2d-v4")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--device", type=str, default=None)
     args = parser.parse_args()
 
     if args.dry_run:

@@ -3,3 +3,6 @@ result*
 test*
 __pycache__
 wandb
+sweep*
+gymnasium
+gymnasium[mujoco]

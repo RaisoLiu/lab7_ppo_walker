@@ -37,7 +37,7 @@ def train():
     train_args.save_dir = os.path.join(args.sweep_folder, run.name)
     train_args.use_print = False
     train_args.use_wandb = True
-    
+    train_args.device = args.device
     # 在這裡添加您的訓練代碼
     trainer = Trainer(train_args, run)
     trainer.train()
@@ -51,6 +51,7 @@ if __name__ == "__main__":
     parser.add_argument("--wandb-project", type=str, required=True, help="Weights & Biases 專案名稱")
     parser.add_argument("--sweep-id", type=str, required=True, help="Sweep ID")
     parser.add_argument("--count", type=int, default=10, help="要執行的 sweep 運行次數")
+    parser.add_argument("--device", type=str, default=None)
     args = parser.parse_args()
     
     # 使用 wandb agent 運行訓練

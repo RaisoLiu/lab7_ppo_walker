@@ -6,7 +6,10 @@ import torch
 class Tester:
     def __init__(self, args, actor_ckpt=None, critic_ckpt=None):
         self.args = args
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not hasattr(args, "device") or args.device is None:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = torch.device(args.device)
         self.require_video = True if hasattr(args, "require_video") and args.require_video else False
         self.env = Environment(args, mode="test", seed=args.seed, require_video=self.require_video)
         self.actor = Actor(self.env.get_obs_dim(), self.env.get_action_dim()).to(self.device)
@@ -64,6 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--require-video", default=True,action="store_true")
     parser.add_argument("--env-name", type=str, default="Walker2d-v4")
     parser.add_argument("--use-print", default=True, action="store_true")
+    parser.add_argument("--device", type=str, default=None)
     args = parser.parse_args()
     
     print("start test: ")
