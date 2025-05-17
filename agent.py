@@ -2,17 +2,21 @@ import argparse
 import wandb
 import copy
 import os
+from train import Trainer
 
 def train():
-    run = wandb.init()
-    config = wandb.config
-    print(config)
-    
     # 從命令行參數獲取基本設置
     parser = argparse.ArgumentParser()
     parser.add_argument("--env-name", type=str, default="Walker2d-v4")
     parser.add_argument("--sweep-folder", type=str, default="sweep-PPO-Walker2d")
+    parser.add_argument("--wandb-entity", type=str, required=True, help="Weights & Biases 實體名稱（用戶名或團隊名）")
+    parser.add_argument("--wandb-project", type=str, required=True, help="Weights & Biases 專案名稱")
+    parser.add_argument("--sweep-id", type=str, required=True, help="Sweep ID")
     args = parser.parse_args()
+    
+    run = wandb.init(entity=args.wandb_entity, project=args.wandb_project)
+    config = wandb.config
+    print(config)
     
     # 更新訓練參數
     train_args = copy.copy(args)
@@ -35,7 +39,22 @@ def train():
     train_args.use_wandb = True
     
     # 在這裡添加您的訓練代碼
-    # train_model(train_args)
+    trainer = Trainer(train_args, run)
+    trainer.train()
 
 if __name__ == "__main__":
-    train() 
+    # 從命令行參數獲取基本設置
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env-name", type=str, default="Walker2d-v4")
+    parser.add_argument("--sweep-folder", type=str, default="sweep-PPO-Walker2d")
+    parser.add_argument("--wandb-entity", type=str, required=True, help="Weights & Biases 實體名稱（用戶名或團隊名）")
+    parser.add_argument("--wandb-project", type=str, required=True, help="Weights & Biases 專案名稱")
+    parser.add_argument("--sweep-id", type=str, required=True, help="Sweep ID")
+    args = parser.parse_args()
+    
+    # 使用 wandb agent 運行訓練
+    wandb.agent(
+        f"{args.wandb_entity}/{args.wandb_project}/{args.sweep_id}",
+        function=train,
+        count=1  # 每次運行一個實驗
+    ) 

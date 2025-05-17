@@ -44,7 +44,7 @@ class Trainer:
 
 
 
-        if args.ckpt_path is not None:
+        if hasattr(args, "ckpt_path") and args.ckpt_path is not None:
             self.load_ckpt(args.ckpt_path)
 
     def select_action(self, state, global_step):

@@ -1,5 +1,7 @@
 import argparse
 import wandb
+import sys
+import os
 
 # 超參數搜索空間定義
 sweep_config = {
@@ -59,16 +61,28 @@ def init_sweep():
     parser.add_argument("--count", type=int, default=100, help="要執行的 sweep 運行次數")
     parser.add_argument("--sweep-folder", type=str, default="sweep-PPO-Walker2d")
     parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d-sweep")
+    parser.add_argument("--wandb-entity", type=str, required=True, help="Weights & Biases 實體名稱（用戶名或團隊名）")
     parser.add_argument("--env-name", type=str, default="Walker2d-v4")
+    parser.add_argument("--python-path", type=str, help="Python 解釋器路徑（如果使用虛擬環境）")
     args = parser.parse_args()
     
     print("初始化 sweep: ")
     print(args)
     
-    sweep_id = wandb.sweep(sweep_config, project=args.wandb_project)
-    print(f"Sweep ID: {sweep_id}")
-    print(f"使用以下命令在 agent 機器上運行：")
-    print(f"wandb agent {args.wandb_project}/{sweep_id}")
+    # 設置 Python 解釋器路徑
+    if args.python_path:
+        sweep_config['program'] = args.python_path
+    else:
+        # 使用當前 Python 解釋器路徑
+        sweep_config['program'] = sys.executable
+    
+    sweep_id = wandb.sweep(sweep_config, project=args.wandb_project, entity=args.wandb_entity)
+    print(f"\nSweep ID: {sweep_id}")
+    print("\n使用以下命令在 agent 機器上運行：")
+    print(f"方法 1 - 使用 wandb agent 命令：")
+    print(f"wandb agent {args.wandb_entity}/{args.wandb_project}/{sweep_id}")
+    print(f"\n方法 2 - 使用 python agent.py：")
+    print(f"python agent.py --wandb-entity {args.wandb_entity} --wandb-project {args.wandb_project} --sweep-id {sweep_id}")
 
 if __name__ == "__main__":
     init_sweep()

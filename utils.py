@@ -83,7 +83,7 @@ class Memory:
         # create dataloader
         dataset = TensorDataset(states, actions, log_probs, rewards, next_states, dones, advantage_gae, advantage_gae_norm, values)
         dataloader = DataLoader(dataset, batch_size=self.args.batch_size, shuffle=True)
-        if self.args.dry_run:
+        if hasattr(self.args, "dry_run") and self.args.dry_run:
             print("="*30)
             print("Dataloader:")
             print(f"n: {n}", "len(dataloader):", len(dataloader))
