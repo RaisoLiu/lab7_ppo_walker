@@ -1,3 +1,5 @@
+# sweep.py
+
 import argparse
 import wandb
 import sys
@@ -12,10 +14,10 @@ sweep_config = {
     },
     'parameters': {
         'actor_lr': {
-            'values': [1e-4, 3e-4, 5e-4, 7e-4, 9e-4]
+            'values': [3e-5, 1e-4, 3e-4, 1e-3, 3e-3]
         },
         'critic_lr': {
-            'values': [1e-4, 3e-4, 5e-4, 7e-4, 9e-4]
+            'values': [3e-5, 1e-4, 3e-4, 1e-3, 3e-3]
         },
         'test_seed': {
             'values': [42, 77, 123, 456, 789, 1000, 1234, 1456, 1789, 2000]
@@ -24,34 +26,34 @@ sweep_config = {
             'values': [0.9, 0.95, 0.99, 0.995]
         },
         'entropy_weight': {
-            'values': [0, 0.01, 0.05, 0.1, 0.2]
+            'values': [0, 0.1, 0.3]
         },
         'max_env_step': {
             'values': [3e6] # fixed
         },
         'rollout_step': {
-            'values': [1024, 2048, 4096, 8192]
+            'values': [1024*4, 1024*8, 1024*16]
         },
         'tau': {
-            'values': [0.9, 0.95, 0.99, 0.995]
+            'values': [0.9, 0.99, 0.995]
         },
         'update_epoch': {
-            'values': [5, 10, 20, 40]
+            'values': [10, 20, 40]
         },
         'grad_clip': {
-            'values': [0.5, 1.0, 2.0, 5.0]
+            'values': [0.5, 1.0, 5.0]
         },
         'batch_size': {
-            'values': [32, 64, 128, 256, 512]
+            'values': [64, 256, 1024]
         },
         'epsilon': {
             'values': [0.1, 0.2, 0.3]
         },
         'num_test_episodes': {
-            'values': [5, 10, 20, 40]
+            'values': [10] # fixed
         },
         'num_save_step': {
-            'values': [1e5] # fixed
+            'values': [2e5] # fixed
         }
     }
 }

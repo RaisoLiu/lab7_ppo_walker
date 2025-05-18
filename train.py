@@ -57,7 +57,8 @@ class Trainer:
         self.logger.histogram_log({
             "global_step": global_step,
         }, {
-            "action": action_from_actor.cpu().detach().numpy()[0],
+            "mean": dist.loc.cpu().detach().numpy()[0],
+            "std": dist.scale.cpu().detach().numpy()[0],
         })
         return action_from_actor, log_prob
     
@@ -89,7 +90,12 @@ class Trainer:
                 rollout_step += 1
                 action, log_prob = self.select_action(state, global_step)
                 value = self.get_value(state)
-                next_state, reward, done = self.env.step(action.cpu().detach().numpy())
+                self.logger.histogram_log({
+                    "global_step": global_step,
+                }, {
+                    "value": value.cpu().detach().numpy()[0]
+                })
+                next_state, reward, done = self.env.step(torch.clamp(action, -1, 1).cpu().detach().numpy())
                 next_value = self.get_value(next_state)
                 episode_reward += reward
                 
@@ -226,20 +232,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ckpt-path", type=str, default=None)
     parser.add_argument("--test-seed", type=int, default=42)
-    parser.add_argument("--actor-lr", type=float, default=5e-4)
-    parser.add_argument("--critic-lr", type=float, default=5e-4)
+    parser.add_argument("--actor-lr", type=float, default=1e-3)
+    parser.add_argument("--critic-lr", type=float, default=5e-3)
     parser.add_argument("--discount-factor", type=float, default=0.99)
-    parser.add_argument("--max-env-step", type=int, default=5e5)
-    parser.add_argument("--entropy-weight", type=float, default=0)  # 修改為 float
+    parser.add_argument("--max-env-step", type=int, default=3e6)
+    parser.add_argument("--entropy-weight", type=float, default=0.005)  # 修改為 float
     parser.add_argument("--tau", type=float, default=0.95)
     parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--epsilon", type=float, default=0.2)  # 修改為 float
-    parser.add_argument("--rollout-step", type=int, default=2048*8)  
+    parser.add_argument("--rollout-step", type=int, default=2048*4)  
     parser.add_argument("--update-epoch", type=int, default=20)  # 修改為 int
     parser.add_argument("--num-test-episodes", type=int, default=10)
     parser.add_argument("--num-save-step", type=int, default=1e5)
     parser.add_argument("--grad-clip", type=float, default=1.0)
-    parser.add_argument("--save-dir", type=str, default="result-PPO-Walker2d-fix-critic-loss")
+    parser.add_argument("--save-dir", type=str, default=None)
     parser.add_argument("--use-wandb", action="store_true")
     parser.add_argument("--use-print", action="store_true")
     parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d-fix-critic-loss")
@@ -257,7 +263,21 @@ if __name__ == "__main__":
     
     print("start train: ")
     print(args)
-
+    
+    if args.save_dir is None:
+        import glob
+        import re
+        
+        existing_dirs = glob.glob("result-PPO-Walker2d-exp*")
+        max_exp_no = 0
+        for d in existing_dirs:
+            match = re.search(r"exp([0-9]+)", d)
+            if match:
+                exp_no = int(match.group(1))
+                max_exp_no = max(max_exp_no, exp_no)
+                
+        no = max_exp_no + 1
+        args.save_dir = f"result-PPO-Walker2d-exp{no}"
     
 
     # 創建保存目錄

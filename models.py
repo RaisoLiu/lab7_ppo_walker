@@ -58,9 +58,9 @@ class Actor(nn.Module):
         
         ############TODO#############
         X = self.model(state)
-        mean = torch.tanh(self.fc_mean(X)) * 1
+        mean = self.fc_mean(X)
         log_std = self.fc_log_std(X)
-        LOG_STD_MIN = -10 # Or -10, -5, a common choice for stability
+        LOG_STD_MIN = -5 # Or -10, -5, a common choice for stability
         LOG_STD_MAX = 0    # Or 0,  a common choice for stability
         log_std = torch.clamp(log_std, LOG_STD_MIN, LOG_STD_MAX) # 非常重要！
         std = torch.exp(log_std) + 1e-5 # 1e-5 也可以考慮調整，例如 1e-6
