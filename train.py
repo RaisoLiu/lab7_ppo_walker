@@ -58,8 +58,6 @@ class Trainer:
             "global_step": global_step,
         }, {
             "action": action_from_actor.cpu().detach().numpy()[0],
-            "mean": dist.loc.cpu().detach().numpy()[0],
-            "std": dist.scale.cpu().detach().numpy()[0],
         })
         return action_from_actor, log_prob
     
@@ -100,17 +98,7 @@ class Trainer:
                 if done:
                     episode_reward_list.append(episode_reward)
                     episode_count += 1
-                    self.logger.log({
-                        "episode": episode_count,
-                        "global_step": global_step,
-                        "episode_step": episode_step,
-                        "episode_reward": episode_reward,
-                    })
-                    self.logger.histogram_log({
-                        "global_step": global_step,
-                    }, {
-                        "episode_reward": episode_reward,
-                    })
+                    self.logger.log({"episode": episode_count, "global_step": global_step, "episode_step": episode_step, "episode_reward": episode_reward})
                     
                     episode_reward = 0
                     episode_step = 0
@@ -130,7 +118,6 @@ class Trainer:
                     "global_step": global_step,
                     "episode_count": episode_count,
                     "best_avg_episode_reward": best_avg_episode_reward,
-                    "best_ckpt_path": best_ckpt_path
                 })
 
                 
@@ -140,10 +127,9 @@ class Trainer:
         critic_loss_list = []
         entropy_bonus_list = []
 
-        for _ in range(self.args.update_epoch): # update_epoch times
+        for _ in tqdm(range(self.args.update_epoch), desc="Updating"): # update_epoch times
             for batch in data_loader:
                 state, action, log_prob, reward, next_state, done, advantage_gae, advantage_gae_norm, values = batch
-                # print(f"state: {state.shape}, action: {action.shape}, log_prob: {log_prob.shape}, reward: {reward.shape}, next_state: {next_state.shape}, done: {done.shape}, advantage_gae: {advantage_gae.shape}, advantage_gae_norm: {advantage_gae_norm.shape}")
                 state = state.to(self.device)
                 action = action.to(self.device)
                 log_prob = log_prob.to(self.device)
@@ -152,8 +138,8 @@ class Trainer:
                 advantage_gae = advantage_gae.to(self.device)
                 advantage_gae_norm = advantage_gae_norm.to(self.device)
                 done = done.to(self.device)
-                critic_loss = self.update_critic(state, reward, next_state, advantage_gae, values, done, retain_graph=False)
-                actor_loss, entropy_bonus = self.update_actor(state, action, log_prob, advantage_gae_norm, retain_graph=False)
+                critic_loss = self.update_critic(state, reward, next_state, advantage_gae, values, done)
+                actor_loss, entropy_bonus = self.update_actor(state, action, log_prob, advantage_gae_norm)
                 actor_loss_list.append(actor_loss.item())
                 entropy_bonus_list.append(entropy_bonus.item())
                 critic_loss_list.append(critic_loss.item())
@@ -166,23 +152,18 @@ class Trainer:
             "entropy_bonus": entropy_bonus_list
         })
         
-    def update_critic(self, state, reward, next_state, advantage_gae, values, done, retain_graph=False):
+    def update_critic(self, state, reward, next_state, advantage_gae, values, done):
         self.critic_optimizer.zero_grad()
-        # TD error
         with torch.no_grad():
             target_value = values + advantage_gae
-            # next_value = self.critic(next_state)
-            # target_value = reward + self.discount_factor * next_value * (1 - done)
-        # print(f"predicted_value: {predicted_value.shape}, real_value: {real_value.shape}")
-        # value = self.critic(state)
-        value_pred = self.critic(next_state)
+        value_pred = self.critic(state)
         critic_loss = F.mse_loss(value_pred, target_value)
-        critic_loss.backward(retain_graph=retain_graph)
+        critic_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=self.args.grad_clip) 
         self.critic_optimizer.step()
         return critic_loss
 
-    def update_actor(self, state, action, old_log_prob, advantage_gae_norm, retain_graph=False):
+    def update_actor(self, state, action, old_log_prob, advantage_gae_norm):
         self.actor_optimizer.zero_grad()
         _, dist = self.actor(state)
 
@@ -192,10 +173,9 @@ class Trainer:
         surr2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * advantage_gae_norm
         policy_loss_elementwise = -torch.min(surr1, surr2)
 
-        entropy = dist.entropy().sum(dim=-1) 
-        entropy_bonus = entropy.mean()
+        entropy_bonus = dist.entropy().sum(dim=-1).mean()
         actor_loss = policy_loss_elementwise.mean() - self.entropy_weight * entropy_bonus
-        actor_loss.backward(retain_graph=retain_graph)
+        actor_loss.backward()
         torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=self.args.grad_clip) 
         self.actor_optimizer.step()
         return actor_loss, entropy_bonus
@@ -216,10 +196,6 @@ class Trainer:
             'critic_state_dict': self.critic.state_dict(),
             'actor_optimizer_state_dict': self.actor_optimizer.state_dict(),
             'critic_optimizer_state_dict': self.critic_optimizer.state_dict(),
-            'episode': episode,
-            'gamma': self.discount_factor,
-            'tau': self.args.tau,
-            'epsilon': self.epsilon
         }, ckpt_path)
 
     def load_ckpt(self, ckpt_path):
@@ -250,23 +226,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ckpt-path", type=str, default=None)
     parser.add_argument("--test-seed", type=int, default=42)
-    parser.add_argument("--actor-lr", type=float, default=3e-4)
-    parser.add_argument("--critic-lr", type=float, default=3e-4)
+    parser.add_argument("--actor-lr", type=float, default=5e-4)
+    parser.add_argument("--critic-lr", type=float, default=5e-4)
     parser.add_argument("--discount-factor", type=float, default=0.99)
     parser.add_argument("--max-env-step", type=int, default=5e5)
     parser.add_argument("--entropy-weight", type=float, default=0)  # 修改為 float
-    parser.add_argument("--tau", type=float, default=0.95) # ??
-    parser.add_argument("--batch-size", type=int, default=64)
+    parser.add_argument("--tau", type=float, default=0.95)
+    parser.add_argument("--batch-size", type=int, default=256)
     parser.add_argument("--epsilon", type=float, default=0.2)  # 修改為 float
-    parser.add_argument("--rollout-step", type=int, default=2048)  
-    parser.add_argument("--update-epoch", type=int, default=10)  # 修改為 int
+    parser.add_argument("--rollout-step", type=int, default=2048*8)  
+    parser.add_argument("--update-epoch", type=int, default=20)  # 修改為 int
     parser.add_argument("--num-test-episodes", type=int, default=10)
     parser.add_argument("--num-save-step", type=int, default=1e5)
     parser.add_argument("--grad-clip", type=float, default=1.0)
-    parser.add_argument("--save-dir", type=str, default="result-PPO-Walker2d")
+    parser.add_argument("--save-dir", type=str, default="result-PPO-Walker2d-fix-critic-loss")
     parser.add_argument("--use-wandb", action="store_true")
     parser.add_argument("--use-print", action="store_true")
-    parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d")
+    parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d-fix-critic-loss")
     parser.add_argument("--env-name", type=str, default="Walker2d-v4")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--device", type=str, default=None)

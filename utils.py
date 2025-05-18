@@ -17,11 +17,7 @@ class Memory:
         state = torch.FloatTensor(state)
         reward = torch.FloatTensor(np.expand_dims(reward, axis=0))  # (1,)
         done = torch.FloatTensor(np.expand_dims(done, axis=0))  # (1,)
-
-        # reward = torch.FloatTensor(reward.astype(np.float32))
         next_state = torch.FloatTensor(next_state)
-        # done = torch.FloatTensor(done.astype(np.float32))
-        # print(type(state), type(action), type(log_prob), type(reward), type(next_state), type(value), type(next_value), type(done))
         self.states.append(state)
         self.actions.append(action)
         self.log_probs.append(log_prob)
@@ -54,28 +50,17 @@ class Memory:
 
 
     def get_dataloader(self):
-        # state, action, log_prob, reward, next_state, done, advantage_gae, advantage_gae_norm
-        # drop not yet done
+        self.compute_advantage_gae()
         n = len(self.advantage_gae)
-        # print(f"n: {n}")
-        # print(f"len(self.states): {len(self.states)}")
-        # print(f"len(self.actions): {len(self.actions)}")
-        # print(f"len(self.log_probs): {len(self.log_probs)}")
-        # print(f"len(self.rewards): {len(self.rewards)}")
-        # print(f"len(self.next_states): {len(self.next_states)}")
-        # print(f"len(self.dones): {len(self.dones)}")
-        # print(f"len(self.values): {len(self.values)}")
-        # print(f"len(self.next_values): {len(self.next_values)}")
-        # print(f"len(self.advantage_gae): {len(self.advantage_gae)}")
         
-        states = torch.stack(self.states[:n])
-        actions = torch.stack(self.actions[:n])
-        log_probs = torch.stack(self.log_probs[:n])
-        rewards = torch.stack(self.rewards[:n])
-        next_states = torch.stack(self.next_states[:n])
-        dones = torch.stack(self.dones[:n])
-        advantage_gae = torch.stack(self.advantage_gae[:n])
-        values = torch.stack(self.values[:n])
+        states = torch.stack(self.states)
+        actions = torch.stack(self.actions)
+        log_probs = torch.stack(self.log_probs)
+        rewards = torch.stack(self.rewards)
+        next_states = torch.stack(self.next_states)
+        dones = torch.stack(self.dones)
+        advantage_gae = torch.stack(self.advantage_gae)
+        values = torch.stack(self.values)
         advantage_gae_norm = (advantage_gae - advantage_gae.mean()) / (advantage_gae.std() + 1e-8)
         advantage_gae_norm = advantage_gae_norm.detach()
 

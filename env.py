@@ -1,5 +1,6 @@
 import gymnasium as gym
 import os
+import numpy as np
 
 
 class Environment:
