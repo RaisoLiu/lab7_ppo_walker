@@ -24,7 +24,7 @@ sweep_config = {
             'values': [0.9, 0.95, 0.99, 0.995]
         },
         'entropy_weight': {
-            'values': [0.01, 0.05, 0.1, 0.2]
+            'values': [0, 0.01, 0.05, 0.1, 0.2]
         },
         'max_env_step': {
             'values': [3e6] # fixed
@@ -59,8 +59,8 @@ sweep_config = {
 def init_sweep():
     parser = argparse.ArgumentParser()
     parser.add_argument("--count", type=int, default=100, help="要執行的 sweep 運行次數")
-    parser.add_argument("--sweep-folder", type=str, default="sweep-PPO-Walker2d")
-    parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d-sweep")
+    parser.add_argument("--sweep-folder", type=str, default="sweep-PPO-Walker2d-2")
+    parser.add_argument("--wandb-project", type=str, default="PPO-Walker2d-sweep-2")
     parser.add_argument("--wandb-entity", type=str, required=True, help="Weights & Biases 實體名稱（用戶名或團隊名）")
     parser.add_argument("--env-name", type=str, default="Walker2d-v4")
     parser.add_argument("--python-path", type=str, help="Python 解釋器路徑（如果使用虛擬環境）")
